@@ -19,3 +19,13 @@ library(MuMIn)
 ## Introduction 
 
 The objective of this project was to investigate how the Force-Length relationship of muscles is affected by their fatigue status, comparing non-fatigued (control) and fatigued conditions. The aim was to determine if there was a significant alteration in the angle at which the maximum isometric force is generated. Previous research has shown a relationship between fatigued and a shift to the right in this angle, suggesting that fatigued muscles tend to exert more force at longer lengths (i will insert a paper here). To further explore this association and validate this hypothesis, we collected and analyzed comprehensive data on maximum voluntary contractions from a class-wide sample, examining both fatigued and non-fatigued muscle conditions to ascertain whether our data set also exhibited a similar rightward shift.
+
+## Methods 
+
+## Results 
+
+## Discussion 
+
+## Author Contributions 
+
+## References 
