@@ -59,15 +59,18 @@ To eccentrically fatigue our forearm flexors, we performed isokenetic controlled
 
 ## Results 
 
-```{r reading in data, echo = FALSE}
-dat.find <- list.files("project 7 data", pattern = "control|fatigue.txt")
+```{r reading in data, echo = FALSE, message = FALSE, warning = FALSE}
+
+f <- list.files("project 7 data", pattern = "_control|fatigue.csv", full.names=TRUE)
+f
+
 dat.l <- list()
 
-for(i in dat.find){
+for(i in f){
   met.dat<- unlist(strsplit(i,"_"))
-  who <- met.dat[2]
-  ang <- met.dat[3]
-  activity <- gsub(".txt","",met.dat[4])
+  who <- met.dat[4]
+  ang <- met.dat[5]
+  activity <- gsub(".csv","", met.dat[6])
   dat.l[[i]]<- read_csv(i)%>%
     mutate(who = who, angle = ang, activity = activity)
 }
