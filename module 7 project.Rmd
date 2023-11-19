@@ -70,18 +70,66 @@ for(i in f){
   met.dat<- unlist(strsplit(i,"_"))
   who <- met.dat[3]
   activity <- met.dat[4]
-  ang <- gsub(".csv","", met.dat[5])
+  ang <- as.numeric(gsub(".csv","", met.dat[5]))
   dat.l[[i]]<- read_csv(i) %>%
     mutate(who = who, angle = ang, activity = activity)
 }
 
 dat <- do.call(rbind,dat.l)
 print(dat)
-
-
-
 ```
 
+```{r normalizing force, echo = FALSE, message = FALSE, warning = FALSE} 
+datfilt <- dat %>%
+  filter(!(who == "letiacianna" | who == "leticianna" & activity %in% c("fatigue", "control"))) %>%
+  group_by(activity) %>%
+  mutate(normF = abs(force/max(force)))
+```
+
+Needed to remove data because it had the same angle for everything - couldn't fit a polynomial.
+
+```{r modeling, echo = FALSE}
+AICs <- datfilt %>%
+  group_by(who, activity) %>%
+  summarize(
+    m2 = AICc(lm(normF~poly(angle,2))), 
+    m3 = AICc(lm(normF~poly(angle,3))), 
+    m4 = AICc(lm(normF~poly(angle,4)))) %>%
+  pivot_longer(m2:m4,names_to = "model", values_to = "AICc") %>%
+  print()
+
+x.pred <- seq(45,157.5,length.out = 1000)
+
+fits <- datfilt %>%
+  group_by(who, activity) %>%
+  summarize(
+    m2 = predict(lm(normF~poly(angle,2)),newdata = data.frame(angle = x.pred)), 
+    m3 = predict(lm(normF~poly(angle,3)),newdata = data.frame(angle = x.pred)), 
+    m4 = predict(lm(normF~poly(angle,4)),newdata = data.frame(angle = x.pred))) %>%
+   pivot_longer(m2:m4, names_to = "model") %>%
+   group_by(who, activity, model) %>%
+   summarize(theta_max = x.pred[which.max(value)]) %>%
+   print()
+
+best.models <- fits %>%
+  left_join(AICs) %>%
+  group_by(who, activity) %>%
+  mutate(best = AICc == min(AICc)) %>%
+  filter(best==TRUE) %>%
+  dplyr::select(-best) %>%
+  print()
+```
+
+``` {r calculating shift, echo = FALSE}
+anova(lm(theta_max ~ activity,best.models))
+
+best.models %>%
+  pivot_wider(id_cols = who, names_from = activity, values_from = theta_max) %>%
+  mutate(shift = fatigue-control) %>%
+  ungroup() %>%
+  summarise(mean.shift = mean(shift, na.rm = TRUE), se.shift = sd(shift, na.rm = TRUE)/sqrt(length(shift))) %>%
+  print()
+```
 ## Discussion 
 
 ## Author Contributions 
