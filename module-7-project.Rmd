@@ -1,0 +1,164 @@
+---
+title: "Module 7 Project"
+author: "R-ight-Angle"
+date: "2023-11-05"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(knitr)
+library(vroom)
+library(readr)
+library(dplyr)
+library(MuMIn)
+```
+
+## Introduction 
+
+The objective of this project was to investigate how the force-length relationship in muscles is affected by experimental condition, comparing non-fatigued (control) and fatigued data The aim was to determine if there was a significant alteration in the angle at which the maximum isometric force is generated, known as theta max. Previous research has shown a relationship between fatigued and a shift to the right in this angle, suggesting that fatigued muscles tend to exert more force at longer lengths [@biewener2006]. To further explore this association and validate this hypothesis, we collected and analyzed comprehensive data on maximum voluntary contractions from a class-wide sample, examining both fatigued and non-fatigued muscle conditions to ascertain whether our data set also exhibited a similar rightward shift.
+
+## Methods 
+
+In order to assess the effect of eccentric fatigue of elbow flexor muscles we measured isometric force over the range of motion of the forearm produced by MVC. In order to obtain MVC data we designed and constructed a portable Arduino-based force-data acquisition system (DAQ).
+
+1. DAQ Design components
+
+100-kg S-type Load cell with HX711 amplifier 
+
+Arduino Uno microcontroller 
+
+2. Data Collection Elbow angle 
+
+Constructed a ganiometer. Then, found the center of the elbow joint in lateral view and marked this position with a marker. From that point, we marked a line along the lateral margin of the radius. We then poked a hole through the center of the ganiometer to affix it to the upper arm so that the center aligns with the mark at the elbow and the 0-180angle axis aligns with the long axis of the humerus. 
+
+3. Data Collection Isometric MVCs
+
+Then, in order to use the ganiometer to collect isometric force data from MVCs over 12 arm angles, 45-157.5angles at 11.25angle intervals, we collected control (non-fatigued) data from the largest arm angle of 157.5. We moved through the 12 arm angles by rotating our bodies about the hips. 
+
+4. Data Collection MVCs after Eccentric Fatigue 
+
+To eccentrically fatigue our forearm flexors, we performed isokenetic controlled drops of a heavy weight object weighing 1/3 of our maximum isometric force recorded in the control experiment. We repeated the exercise for 3 minutes. Then, we waited 2 minutes before performing the experiment exactly the same as we did for the control data. 
+
+### Summary of Experimental Protocol
+
+1. Fabricate and program a load-cell data acquisition system.
+
+2. Make a ganiometer.
+
+3. Record isometric MVCs at 12 distinct elbow angles. (un-fatigued data)
+
+4. Eccentrically fatigue flexors.
+
+5. Wait 2 minutes.
+
+6. Repeat recording isometric MVCs at the same 12 distinct elbow angles (fatigued data)
+
+[MISSING CODING METHODS]
+
+## Results 
+
+```{r reading in data, echo = FALSE, message = FALSE, warning = FALSE}
+
+f <- list.files("new_data", pattern = ".csv", full.names=TRUE)
+
+dat.l <- list()
+
+for(i in f){
+  met.dat<- unlist(strsplit(i,"_"))
+  who <- met.dat[3]
+  activity <- met.dat[4]
+  ang <- as.numeric(gsub(".csv","", met.dat[5]))
+  dat.l[[i]]<- read_csv(i) %>%
+    mutate(who = who, angle = ang, activity = activity)
+}
+
+dat <- do.call(rbind,dat.l)
+```
+
+```{r normalizing force, echo = FALSE, message = FALSE, warning = FALSE} 
+datfilt <- dat %>%
+  filter(!(who == "letiacianna" | who == "leticianna" & activity %in% c("fatigue", "control"))) %>%
+  group_by(activity) %>%
+  mutate(normF = abs(force/max(force)))
+```
+
+Class data was altered to remove problematic groups that polynomials could not be fitted to (angles were of the same value). Additionally, force was normalized by condition. Polynomial models were generated to estimate maximum force, as the force-sarcomere length relationship is parabolic. Second, third, and fourth order polynomial models were assessed with the Akaike information criterion (AIC):
+
+```{r modeling, echo = FALSE}
+AICs <- datfilt %>%
+  group_by(who, activity) %>%
+  summarize(
+    m2 = AICc(lm(normF~poly(angle,2))), 
+    m3 = AICc(lm(normF~poly(angle,3))), 
+    m4 = AICc(lm(normF~poly(angle,4)))) %>%
+  pivot_longer(m2:m4,names_to = "model", values_to = "AICc")
+
+AICs %>%
+  kable(caption = "Table 1: AIC scores for varying polynomial models 
+        fitting control and fatigued data:") %>%
+  print()
+
+x.pred <- seq(45,157.5,length.out = 1000)
+```
+
+Next, models were filtered by best fit to data (lowest AIC score): 
+
+```{r best fit, echo = FALSE, message = FALSE, warning = FALSE}
+fits <- datfilt %>%
+  group_by(who, activity) %>%
+  summarize(
+    m2 = predict(lm(normF~poly(angle,2)),newdata = data.frame(angle = x.pred)), 
+    m3 = predict(lm(normF~poly(angle,3)),newdata = data.frame(angle = x.pred)), 
+    m4 = predict(lm(normF~poly(angle,4)),newdata = data.frame(angle = x.pred))) %>%
+   pivot_longer(m2:m4, names_to = "model") %>%
+   group_by(who, activity, model) %>%
+   summarize(theta_max = x.pred[which.max(value)])
+
+best.models <- fits %>%
+  left_join(AICs) %>%
+  group_by(who, activity) %>%
+  mutate(best = AICc == min(AICc)) %>%
+  filter(best==TRUE) %>%
+  dplyr::select(-best) %>%
+  print()
+
+best.models %>%
+  kable(caption = "Table 2: Best fitting model according to subject and condition, with predicted theta max value")
+```
+
+Finally, an ANOVA test was run to investigate a shift in theta max between experimental conditions (control and fatigued). A significant difference in theta max between conditions was found, with a p-value for the F statistic of 0.01981. The mean shift and standard error of the mean were found to be:
+
+``` {r calculating shift, echo = FALSE, warning = FALSE, message = FALSE}
+anova(lm(theta_max ~ activity,best.models))
+
+best.models %>%
+  pivot_wider(id_cols = who, names_from = activity, values_from = theta_max) %>%
+  mutate(shift = fatigue-control) %>%
+  ungroup() %>%
+  summarise(mean.shift = mean(shift, na.rm = TRUE), se.shift = sd(shift, na.rm = TRUE)/sqrt(length(shift))) %>%
+  kable(caption = "Table 3: Mean shift in theta max") %>%
+  print()
+```
+
+To visualize the shift in maximum angle, the grouped bar plot of Figure 1 was generated:
+
+``` {r some plots, echo = FALSE, warning = FALSE, message = FALSE}
+shift.p <- best.models %>%
+  pivot_wider(id_cols = who, names_from = activity, values_from = theta_max) %>%
+  mutate(shift = fatigue-control)
+
+shift.p_long <- shift.p %>%
+  pivot_longer(cols = c("control", "fatigue"), names_to = "Condition")
+
+shift.p_long %>%
+  ggplot(aes(x=who, y=value, fill=Condition)) + geom_bar(stat = "identity", position = "dodge", width = 0.5) + scale_x_discrete(labels = NULL) + theme_classic() + coord_flip() + ylab("Theta max (º)") + ggtitle("Figure 1: Theta max dependent on experimental condition for each participant")
+
+```
+
+## Discussion 
+
+## Author Contributions 
+
+## References 
