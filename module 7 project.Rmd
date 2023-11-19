@@ -18,7 +18,7 @@ library(MuMIn)
 
 ## Introduction 
 
-The objective of this project was to investigate how the Force-Length relationship of muscles is affected by their fatigue status, comparing non-fatigued (control) and fatigued conditions. The aim was to determine if there was a significant alteration in the angle at which the maximum isometric force is generated. Previous research has shown a relationship between fatigued and a shift to the right in this angle, suggesting that fatigued muscles tend to exert more force at longer lengths (i will insert a paper here). To further explore this association and validate this hypothesis, we collected and analyzed comprehensive data on maximum voluntary contractions from a class-wide sample, examining both fatigued and non-fatigued muscle conditions to ascertain whether our data set also exhibited a similar rightward shift.
+The objective of this project was to investigate how the force-length relationship in muscles is affected by experimental condition, comparing non-fatigued (control) and fatigued data The aim was to determine if there was a significant alteration in the angle at which the maximum isometric force is generated, known as theta max. Previous research has shown a relationship between fatigued and a shift to the right in this angle, suggesting that fatigued muscles tend to exert more force at longer lengths (i will insert a paper here). To further explore this association and validate this hypothesis, we collected and analyzed comprehensive data on maximum voluntary contractions from a class-wide sample, examining both fatigued and non-fatigued muscle conditions to ascertain whether our data set also exhibited a similar rightward shift.
 
 ## Methods 
 
@@ -56,13 +56,13 @@ To eccentrically fatigue our forearm flexors, we performed isokenetic controlled
 
 6. Repeat recording isometric MVCs at the same 12 distinct elbow angles (fatigued data)
 
+[MISSING CODING METHODS]
 
 ## Results 
 
 ```{r reading in data, echo = FALSE, message = FALSE, warning = FALSE}
 
 f <- list.files("new_data", pattern = ".csv", full.names=TRUE)
-f
 
 dat.l <- list()
 
@@ -76,7 +76,6 @@ for(i in f){
 }
 
 dat <- do.call(rbind,dat.l)
-print(dat)
 ```
 
 ```{r normalizing force, echo = FALSE, message = FALSE, warning = FALSE} 
@@ -86,7 +85,7 @@ datfilt <- dat %>%
   mutate(normF = abs(force/max(force)))
 ```
 
-Needed to remove data because it had the same angle for everything - couldn't fit a polynomial.
+Class data was altered to remove problematic groups that polynomials could not be fitted to (angles were of the same value). Additionally, force was normalized by condition. Polynomial models were generated to estimate maximum force, as the force-sarcomere length relationship is parabolic. Second, third, and fourth order polynomial models were assessed with the Akaike information criterion (AIC):
 
 ```{r modeling, echo = FALSE}
 AICs <- datfilt %>%
@@ -95,11 +94,19 @@ AICs <- datfilt %>%
     m2 = AICc(lm(normF~poly(angle,2))), 
     m3 = AICc(lm(normF~poly(angle,3))), 
     m4 = AICc(lm(normF~poly(angle,4)))) %>%
-  pivot_longer(m2:m4,names_to = "model", values_to = "AICc") %>%
+  pivot_longer(m2:m4,names_to = "model", values_to = "AICc")
+
+AICs %>%
+  kable(caption = "Table 1: AIC scores for varying polynomial models 
+        fitting control and fatigued data:") %>%
   print()
 
 x.pred <- seq(45,157.5,length.out = 1000)
+```
 
+Next, models were filtered by best fit to data (lowest AIC score): 
+
+```{r best fit, echo = FALSE, message = FALSE, warning = FALSE}
 fits <- datfilt %>%
   group_by(who, activity) %>%
   summarize(
@@ -108,8 +115,7 @@ fits <- datfilt %>%
     m4 = predict(lm(normF~poly(angle,4)),newdata = data.frame(angle = x.pred))) %>%
    pivot_longer(m2:m4, names_to = "model") %>%
    group_by(who, activity, model) %>%
-   summarize(theta_max = x.pred[which.max(value)]) %>%
-   print()
+   summarize(theta_max = x.pred[which.max(value)])
 
 best.models <- fits %>%
   left_join(AICs) %>%
@@ -118,9 +124,14 @@ best.models <- fits %>%
   filter(best==TRUE) %>%
   dplyr::select(-best) %>%
   print()
+
+best.models %>%
+  kable(caption = "Table 2: Best fitting model according to subject and condition, with predicted theta max value")
 ```
 
-``` {r calculating shift, echo = FALSE}
+Finally, an ANOVA test was run to investigate a shift in theta max between experimental conditions (control and fatigued). A significant difference in theta max between conditions was found, with a p-value for the F statistic of 0.01981. The mean shift and standard error of the mean were found to be:
+
+``` {r calculating shift, echo = FALSE, warning = FALSE, message = FALSE}
 anova(lm(theta_max ~ activity,best.models))
 
 best.models %>%
@@ -128,22 +139,25 @@ best.models %>%
   mutate(shift = fatigue-control) %>%
   ungroup() %>%
   summarise(mean.shift = mean(shift, na.rm = TRUE), se.shift = sd(shift, na.rm = TRUE)/sqrt(length(shift))) %>%
+  kable(caption = "Table 3: Mean shift in theta max") %>%
   print()
 ```
 
-``` {r some plots, echo = FALSE}
+To visualize the shift in maximum angle, the grouped bar plot of Figure 1 was generated:
+
+``` {r some plots, echo = FALSE, warning = FALSE, message = FALSE}
 shift.p <- best.models %>%
   pivot_wider(id_cols = who, names_from = activity, values_from = theta_max) %>%
   mutate(shift = fatigue-control)
 
 shift.p_long <- shift.p %>%
-  pivot_longer(cols = c("control", "fatigue"), names_to = "activity") %>%
-  print()
+  pivot_longer(cols = c("control", "fatigue"), names_to = "Condition")
 
 shift.p_long %>%
-  ggplot(aes(x=who, y=value, fill=activity)) + geom_bar(stat = "identity", position = "dodge", width = 0.5) + scale_x_discrete(labels = NULL) + theme_classic() + coord_flip()
+  ggplot(aes(x=who, y=value, fill=Condition)) + geom_bar(stat = "identity", position = "dodge", width = 0.5) + scale_x_discrete(labels = NULL) + theme_classic() + coord_flip() + ylab("Theta max (º)") + ggtitle("Figure 1: Theta max dependent on experimental condition for each participant")
 
 ```
+
 ## Discussion 
 
 ## Author Contributions 
