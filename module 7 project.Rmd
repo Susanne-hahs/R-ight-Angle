@@ -162,9 +162,7 @@ shift.p_long %>%
 
 Our group was assigned the task to examine the force-length relationship property in skeletal muscles, focusing on the forearm flexor muscles. The force-length relationship concept revolves around muscles exerting maximum force at their resting length and decreasing force when either shortened or stretched beyond that point. Our project specifically investigated how fatigue influences the force-length relationship in the upper limbs. 
 
-(add paragraph for data)
-
-
+Upon analyzing the collective data set from our class, we identified a significant mean shift of approximately 14.7 degrees in the maximum force-producing angles between fatigue and control measurements. Utilizing ANOVA variance testing, we observed a noteworthy upward shift from controlled to fatigued muscles, reaching statistical significance at the 5% level. Therefore, the insights gained from our class's studies contribute to the advancement of understanding upper arm biomechanics. 
 
 Numerous studies have explored the force-length relationship, focusing primarily on sacromeres. In one study analyzing mechanically isolated sacromeres [@herzog2022], it was concluded that while sacromere forces are strongly influenced by sacromere lengths under isometric conditions, they can exhibit various steady-state values depending on the sacromere's contractile history. The study also investigated force enhancements in individual sacromeres, suggesting that the force-dependent attachment of titin to actin could shorten the sacromere's resting spring length, thereby increasing its stiffness. Our group proposes further investigation into the role of regulatory proteins in muscle contraction, such as troponin and tropomyosin. Exploring these regulatory proteins may offer additional insights into force depression within sacromeres, particularly their impact on cross-bridge attachments to actin. Furthermore, examining the influence of a sacromere's contractile history during eccentric forces on non-isolated sacromeres could provide interesting and valuable information. 
 
