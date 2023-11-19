@@ -130,6 +130,20 @@ best.models %>%
   summarise(mean.shift = mean(shift, na.rm = TRUE), se.shift = sd(shift, na.rm = TRUE)/sqrt(length(shift))) %>%
   print()
 ```
+
+``` {r some plots, echo = FALSE}
+shift.p <- best.models %>%
+  pivot_wider(id_cols = who, names_from = activity, values_from = theta_max) %>%
+  mutate(shift = fatigue-control)
+
+shift.p_long <- shift.p %>%
+  pivot_longer(cols = c("control", "fatigue"), names_to = "activity") %>%
+  print()
+
+shift.p_long %>%
+  ggplot(aes(x=who, y=value, fill=activity)) + geom_bar(stat = "identity", position = "dodge", width = 0.5) + scale_x_discrete(labels = NULL) + theme_classic() + coord_flip()
+
+```
 ## Discussion 
 
 ## Author Contributions 
