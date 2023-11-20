@@ -42,6 +42,10 @@ Then, in order to use the ganiometer to collect isometric force data from MVCs o
 
 To eccentrically fatigue our forearm flexors, we performed isokenetic controlled drops of a heavy weight object weighing 1/3 of our maximum isometric force recorded in the control experiment. We repeated the exercise for 3 minutes. Then, we waited 2 minutes before performing the experiment exactly the same as we did for the control data. 
 
+5. Data Analysis
+
+From the data obtained with the Arduino setup, force analysis was conducted with R. Force was normalized according to experimental condition (fatigue vs. control), and the best-fitting polynomial model was assigned to each combination of participant, condition, and arm angle. Modeling allowed for calculation of a difference in theta max according to condition, termed the shift in theta max. Finally, this shift was analyzed in terms of its significance via ANOVA.
+
 ### Summary of Experimental Protocol
 
 1. Fabricate and program a load-cell data acquisition system.
@@ -173,5 +177,7 @@ Susanne Hahs: Introduction, Discussion, Bibliography.
 Julia Curry: Wrote the Methods and contributed to editing. Set up Arduino board.
 
 Binghao Deng: data collection, file formatting, and final code review
+
+Jaan Selod: Wrote results section, part 5 of methods, and helped set up Arduino + reread.
 
 ## References 
